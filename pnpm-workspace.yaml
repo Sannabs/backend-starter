@@ -1,0 +1,9 @@
+networkConcurrency: 3
+fetchTimeout: 600000
+fetchRetries: 5
+
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  msgpackr-extract: false
+  prisma: true
