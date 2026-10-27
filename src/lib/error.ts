@@ -14,7 +14,7 @@ export class AppError extends Error {
     this.code = code;
     this.isOperational = isOperational;
     Error.captureStackTrace(this, this.constructor);
-    Object.setPrototypeOf(this, AppError.prototype);
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 }
 
@@ -42,17 +42,15 @@ export class ForbiddenError extends AppError {
   }
 }
 
-// Distinct from FORBIDDEN so the client can show "account suspended" instead of
-// a permissions message the user cannot act on.
-export class BusinessSuspendedError extends AppError {
-  constructor() {
-    super("This business account is suspended", 403, "BUSINESS_SUSPENDED");
-  }
-}
-
 export class ValidationError extends AppError {
   constructor(message: string) {
     super(message, 400, "VALIDATION_ERROR");
+  }
+}
+
+export class ServiceUnavailableError extends AppError {
+  constructor(message = "Service temporarily unavailable") {
+    super(message, 503, "SERVICE_UNAVAILABLE");
   }
 }
 

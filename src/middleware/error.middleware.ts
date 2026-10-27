@@ -1,10 +1,16 @@
 import type { Request, Response, NextFunction } from "express";
+import { APIError } from "better-auth/api";
 import { PrismaClientKnownRequestError } from "../generated/prisma/internal/prismaNamespace.js";
 import { AppError, ConflictError, ValidationError } from "../lib/error.js";
 import { logger } from "../lib/logger.js";
 
 // Constraint violations are expected outcomes of user input, not server faults.
 function toAppError(err: Error): Error {
+  // auth.api calls (signup) throw Better Auth's own error; its status and message are meant for the client.
+  if (err instanceof APIError) {
+    return new AppError(err.body?.message ?? err.message, err.statusCode, err.body?.code ?? String(err.status));
+  }
+
   if (!(err instanceof PrismaClientKnownRequestError)) return err;
 
   const fields = (err.meta?.target as string[] | undefined)?.join(", ");

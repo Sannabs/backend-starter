@@ -3,7 +3,10 @@ fetchTimeout: 600000
 fetchRetries: 5
 
 allowBuilds:
+  '@parcel/watcher': false
   '@prisma/engines': true
+  '@swc/core': true
   esbuild: true
   msgpackr-extract: false
   prisma: true
+  unrs-resolver: false

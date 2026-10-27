@@ -1,0 +1,13 @@
+{
+  // Lives here, not at the root, so the editor's language server picks it up for
+  // any file under tests/ — the root config only includes src/ and omits jest types.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "noEmit": true,
+    "types": ["node", "jest"]
+  },
+  // src too: the `Express.Request` augmentation lives in the auth middleware, and
+  // without it in the program `req.user` is an error in anything tests import.
+  "include": ["**/*", "../src/**/*"]
+}

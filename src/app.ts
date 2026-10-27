@@ -6,6 +6,7 @@ import { env } from './config/env.js'
 import { auth } from './lib/auth.js'
 import { errorHandler } from './middleware/error.middleware.js'
 import { requestLogger } from './middleware/requestLogger.middleware.js'
+import { rateLimit } from './middleware/ratelimiter.middleware.js'
 
 
 const app = express()
@@ -16,8 +17,12 @@ const app = express()
 app.use(requestLogger)
 app.use(helmet())
 app.use(cors({ origin: env.CLIENT_URL, credentials: true }))
+app.use(rateLimit('global'))
 
 
+
+app.post('/api/auth/send-verification-email', rateLimit('auth:email'))
+app.post('/api/auth/request-password-reset', rateLimit('auth:email'))
 
 app.all('/api/auth/{*splat}', toNodeHandler(auth))
 

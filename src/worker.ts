@@ -1,12 +1,17 @@
 import { emailWorker } from "./workers/email.worker.js";
+import { maintenanceWorker } from "./workers/maintenance.worker.js";
+import { scheduleIdempotencyPrune } from "./queues/maintenance.queue.js";
 import { prisma } from "./config/prisma.js";
+import { awaitRedisReady } from "./config/redis.js";
 import { env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
 
-const workers = [emailWorker];
+const workers = [emailWorker, maintenanceWorker];
 
 async function main() {
   await prisma.$connect();
+  await awaitRedisReady();
+  await scheduleIdempotencyPrune();
   logger.info("Workers started", {
     env: env.NODE_ENV,
     queues: workers.map((w) => w.name),

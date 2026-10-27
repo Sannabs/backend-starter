@@ -24,6 +24,7 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(1),
   BETTER_AUTH_URL: z.url(),
   CLIENT_URL: z.url(),
+  COOKIE_DOMAIN: z.string().optional(),
 
   R2_ACCOUNT_ID: z.string().min(1),
   R2_ACCESS_KEY_ID: z.string().min(1),

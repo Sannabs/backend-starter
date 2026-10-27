@@ -1,7 +1,4 @@
-import { randomUUID } from "node:crypto";
-
 import { betterAuth } from "better-auth";
-import { APIError } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 
 import { env } from "../config/env.js";
@@ -44,11 +41,12 @@ export const auth = betterAuth({
     disableCSRFCheck: !isProd,
     useSecureCookies: isProd,
     trustedProxyHeaders: true,
-    ...(isProd && {
-      crossSubDomainCookies: {
-        enabled: true,
-        domain: ".pos.com",
-      },
-    }),
+    ...(isProd &&
+      env.COOKIE_DOMAIN && {
+        crossSubDomainCookies: {
+          enabled: true,
+          domain: env.COOKIE_DOMAIN,
+        },
+      }),
   },
 });

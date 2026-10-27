@@ -1,30 +1,42 @@
-import type { RequestHandler } from "express";
+import type { Request, RequestHandler } from "express";
 
-import { redis } from "../config/redis.js";
+import { POLICIES } from "../lib/ratelimit/policies.js";
+import type { PolicyName, Scope } from "../lib/ratelimit/policies.js";
+import { consume } from "../lib/ratelimit/limiter.js";
 import { RateLimitError } from "../lib/error.js";
 
-interface RateLimitOptions {
-  windowSeconds: number;
-  max: number;
+function subjectFor(req: Request, scope: Scope): string {
+  const ip = req.ip ?? "unknown";
+
+  switch (scope) {
+    case "ip":
+      return `ip:${ip}`;
+    case "user":
+      return `u:${req.user?.id ?? `anon:${ip}`}`;
+  }
 }
 
-/** Fixed window per IP + route. Attach to auth and other abuse-prone endpoints. */
-export const rateLimit =
-  ({ windowSeconds, max }: RateLimitOptions): RequestHandler =>
-  async (req, res, next) => {
-    const key = `rl:${req.baseUrl}${req.path}:${req.ip}`;
+export const rateLimit = (
+  name: PolicyName,
+  opts: { key?: (req: Request) => string; cost?: (req: Request) => number } = {},
+): RequestHandler => {
+  const policy = POLICIES[name];
 
-    try {
-      const hits = await redis.incr(key);
-      if (hits === 1) await redis.expire(key, windowSeconds);
+  return async (req, res, next) => {
+    const subject = opts.key ? opts.key(req) : subjectFor(req, policy.scope);
+    const cost = opts.cost ? opts.cost(req) : 1;
 
-      res.setHeader("RateLimit-Limit", max);
-      res.setHeader("RateLimit-Remaining", Math.max(max - hits, 0));
+    const verdict = await consume(`rl:${name}:${subject}`, policy, cost);
 
-      if (hits > max) return next(new RateLimitError());
-      next();
-    } catch {
-      // Fail open: Redis being down should throttle nothing, not reject everything.
-      next();
+    res.setHeader("RateLimit-Policy", name);
+    res.setHeader("RateLimit-Limit", String(policy.capacity));
+    res.setHeader("RateLimit-Remaining", String(verdict.remaining));
+
+    if (!verdict.allowed) {
+      res.setHeader("Retry-After", String(Math.ceil(verdict.retryAfterMs / 1000)));
+      return next(new RateLimitError());
     }
+
+    next();
   };
+};

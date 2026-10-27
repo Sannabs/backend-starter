@@ -72,3 +72,17 @@ model Verification {
   @@index([identifier])
   @@map("verification")
 }
+
+model IdempotencyRecord {
+  id        String   @id @default(uuid(7))
+  scope     String
+  tenantId  String
+  // The client's Idempotency-Key. Required on the routes that use runOnce.
+  key       String
+  resultRef String
+  createdAt DateTime @default(now())
+
+  @@unique([scope, tenantId, key], name: "idempotencyLookup")
+  @@index([createdAt])
+  @@map("idempotency_record")
+}
